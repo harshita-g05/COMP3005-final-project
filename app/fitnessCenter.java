@@ -96,18 +96,26 @@ public class fitnessCenter {
      * @throws SQLException
      */
     private static void memberSignup() throws SQLException {
-        System.out.print("First Name: ");
-        String fName = scanner.nextLine();
-        System.out.print("Last Name: ");
-        String lName = scanner.nextLine();
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
+        // Use getRequiredInput for mandatory fields
+        String fName = getRequiredInput("First Name: ");
+        String lName = getRequiredInput("Last Name: ");
+        String email = getRequiredInput("Email: ");
+        Date sqlDate = null;
+        while (sqlDate == null) {
+            System.out.print("DOB (YYYY-MM-DD): ");
+            String dobString = scanner.nextLine().trim();
+            try {
+                if (dobString.isEmpty()) System.out.println("Field cannot be empty.");
+                else sqlDate = Date.valueOf(dobString);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid format");
+            }
+        }
+        System.out.println("OPTIONAL:");
         System.out.print("Phone Number: ");
         String phone = scanner.nextLine();
         System.out.print("Gender: ");
         String gender = scanner.nextLine();
-        System.out.print("Date of Birth (YYYY-MM-DD): ");
-        String dob = scanner.nextLine();
         System.out.print("Fitness Goal: ");
         String goal = scanner.nextLine();
 
@@ -119,7 +127,7 @@ public class fitnessCenter {
             stmt.setString(4, phone);
             stmt.setString(5, gender);
             // have to convert the string to date format so sql accepts
-            stmt.setDate(6, Date.valueOf(dob));
+            stmt.setDate(6, sqlDate);
             stmt.setString(7, goal);
             stmt.executeUpdate();
             System.out.println("Successful! Please go back and Login.");
@@ -133,12 +141,9 @@ public class fitnessCenter {
      * @throws SQLException
      */
     private static void trainerSignup() throws SQLException {
-        System.out.print("First Name: ");
-        String fName = scanner.nextLine();
-        System.out.print("Last Name: ");
-        String lName = scanner.nextLine();
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
+        String fName = getRequiredInput("First Name: ");
+        String lName = getRequiredInput("Last Name: ");
+        String email = getRequiredInput("Email: ");
 
         String sql = "INSERT INTO Trainers (first_name, last_name, email) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -295,13 +300,23 @@ public class fitnessCenter {
                 System.out.print("\nEnter Class ID to book: ");
                 try {
                     int classId = Integer.parseInt(scanner.nextLine());
-                    // insert Booking
-                    String bookSql = "INSERT INTO Bookings (member_id, class_id, payment_amount, billing_status) VALUES (?, ?, 20.00, 'Pending')";
-                    PreparedStatement bookStmt = conn.prepareStatement(bookSql);
-                    bookStmt.setInt(1, memberId);
-                    bookStmt.setInt(2, classId);
-                    bookStmt.executeUpdate();
-                    System.out.println("Class Booked! See you soon");
+                    // --- 1. CHECK IF ALREADY BOOKED ---
+                    String checkSql = "SELECT 1 FROM Bookings WHERE member_id = ? AND class_id = ?";
+                    PreparedStatement checkStmt = conn.prepareStatement(checkSql);
+                    checkStmt.setInt(1, memberId);
+                    checkStmt.setInt(2, classId);
+                    ResultSet checkRs = checkStmt.executeQuery();
+                    if (checkRs.next()) {
+                        System.out.println("You have already booked this session!");
+                    } else {
+                        // insert Booking
+                        String bookSql = "INSERT INTO Bookings (member_id, class_id, payment_amount, billing_status) VALUES (?, ?, 20.00, 'Pending')";
+                        PreparedStatement bookStmt = conn.prepareStatement(bookSql);
+                        bookStmt.setInt(1, memberId);
+                        bookStmt.setInt(2, classId);
+                        bookStmt.executeUpdate();
+                        System.out.println("Class Booked! See you soon");
+                    }
                 } catch (SQLException e) {
                     System.out.println("Booking Failed: " + e.getMessage());
                 } catch (NumberFormatException e) {
@@ -541,4 +556,19 @@ public class fitnessCenter {
             }
         }
     }
+
+    // --- HELPER: Forces user to type something ---
+    private static String getRequiredInput(String prompt) {
+        String input = "";
+        while (true) {
+            System.out.print(prompt);
+            input = scanner.nextLine().trim();
+            if (!input.isEmpty()) {
+                return input;
+            }
+            System.out.println("This field cannot be empty. Please try again.");
+        }
+    }
+
+
 }
