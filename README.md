@@ -1,6 +1,6 @@
 COMP 3005 Final Project: Health & Fitness Club Management System
 
-Video Demonstration: 
+Video Demonstration: https://youtu.be/7AnQ3uOdeg4
 ---
 
 Project Structure:
@@ -20,4 +20,5 @@ How to Run
 Testing for user accounts:
 Member: rachelg@gmail.com
 Trainer: janesmith@gmail.com
+
 Admin password: admin123
